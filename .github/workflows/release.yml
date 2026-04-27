@@ -15,6 +15,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Pre-seed sdkconfig with values Component Manager needs
+        # CM evaluates `if: $CONFIG{...}` clauses in component manifests before
+        # Kconfig has been processed; on a fresh CI build with no sdkconfig it
+        # can't find SENDSPIN_ENABLE_PLAYER and aborts. Writing these here lets
+        # CM resolve cleanly. Kconfig will overwrite/expand from
+        # sdkconfig.defaults as part of the normal build.
+        run: |
+          cat > sdkconfig <<'EOF'
+          CONFIG_SENDSPIN_ENABLE_PLAYER=y
+          CONFIG_SENDSPIN_ENABLE_CONTROLLER=y
+          CONFIG_SENDSPIN_ENABLE_METADATA=y
+          CONFIG_SENDSPIN_ENABLE_ARTWORK=
+          CONFIG_SENDSPIN_ENABLE_VISUALIZER=
+          EOF
+
       - name: Build firmware (ESP-IDF v5.5)
         uses: espressif/esp-idf-ci-action@v1
         with:
