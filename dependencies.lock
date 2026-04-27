@@ -1,0 +1,89 @@
+dependencies:
+  bblanchon/arduinojson:
+    component_hash: 5e6aff2bc5bc988b36c8e90c01e637495ee895ad3af93911860c21ec6da79b6a
+    dependencies: []
+    source:
+      registry_url: https://components.espressif.com
+      type: service
+    version: 7.4.3
+  esphome/micro-flac:
+    component_hash: ffa15f8aaee4709aa2044e7996d44aad44a7c0082f2bc639accecf102802f8bc
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=4.4'
+    source:
+      registry_url: https://components.espressif.com
+      type: service
+    version: 0.1.1
+  esphome/micro-opus:
+    component_hash: fa192a7bc21d7f3d2106c32a4273a2ccbee2840524eb5f98a79f984c7b7cbcab
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=4.4'
+    source:
+      registry_url: https://components.espressif.com
+      type: service
+    version: 0.3.6
+  espressif/esp_websocket_client:
+    component_hash: c5a067a9fddea370c478017e66fac302f4b79c3d4027e9bdd42a019786cceb92
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=5.0'
+    source:
+      registry_url: https://components.espressif.com
+      type: service
+    version: 1.6.1
+  espressif/mdns:
+    component_hash: 8bcf12e37c58c1d584aef32a02b92548124c7a3a9fcf548d3235c844a035e0f0
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=5.0'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 1.11.1
+  idf:
+    source:
+      type: idf
+    version: 5.5.4
+  sendspin/sendspin-cpp:
+    component_hash: 6a3997cd0bc9741fa23dfb609da0f76fa1f0dc76f62bbc9d7cca12703374d9f6
+    dependencies:
+    - name: bblanchon/arduinojson
+      registry_url: https://components.espressif.com
+      require: private
+      version: '>=7.4.2'
+    - name: esphome/micro-flac
+      registry_url: https://components.espressif.com
+      require: private
+      rules:
+      - if: $CONFIG{SENDSPIN_ENABLE_PLAYER} == True
+      version: '>=0.1.1'
+    - name: esphome/micro-opus
+      registry_url: https://components.espressif.com
+      require: private
+      rules:
+      - if: $CONFIG{SENDSPIN_ENABLE_PLAYER} == True
+      version: '>=0.3.5'
+    - name: espressif/esp_websocket_client
+      registry_url: https://components.espressif.com
+      require: private
+      version: '>=1.0.0'
+    - name: idf
+      require: private
+      version: '>=5.5'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 0.3.1
+direct_dependencies:
+- espressif/mdns
+- idf
+- sendspin/sendspin-cpp
+manifest_hash: 43bb666dc9224f3db2ef6df4bfdce7e45b19a2d2b3a115e1cc123fc4bead2b60
+target: esp32s3
+version: 2.0.0

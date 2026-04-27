@@ -1,7 +1,10 @@
 # ESP-IDF build output
 build/
 managed_components/
-dependencies.lock
+
+# dependencies.lock is INTENTIONALLY committed — it pins exact component
+# versions and lets the Component Manager skip its if-clause evaluator (which
+# breaks on a fresh CI build before component Kconfigs are registered).
 
 # Per-user configuration (contains WiFi creds, etc.)
 sdkconfig
