@@ -49,6 +49,9 @@ jobs:
           cp build/partition_table/partition-table.bin release/partition-table.bin
           cp build/ota_data_initial.bin            release/ota_data_initial.bin
           cp build/sendspin-xiao.bin               release/sendspin-xiao.bin
+          # esptool isn't on the GH runner (lives inside the ESP-IDF docker
+          # image used by the build step). Install it for the merge call.
+          pip install --quiet esptool
           # Esptool-compatible merged image for one-shot flashing
           python -m esptool --chip esp32s3 merge_bin -o release/sendspin-xiao-merged.bin \
               --flash_mode dio --flash_freq 80m --flash_size 8MB \
