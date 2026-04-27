@@ -155,6 +155,13 @@ size_t I2sAudioSink::on_audio_write(uint8_t* data, size_t length, uint32_t timeo
         return 0;
     }
 
+    // Belt-and-suspenders: any audio data arriving means we should be unmuted.
+    // on_stream_start is the right place semantically, but observed in practice
+    // that on_audio_write can fire without an explicit stream_start (e.g. on
+    // mid-track resume after device reboot). Driving XSMT high here makes the
+    // mute always track real audio flow.
+    set_xsmt(true);
+
     const uint8_t* write_src = data;
     static uint8_t scratch[32768];
 
