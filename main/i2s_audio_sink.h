@@ -15,7 +15,7 @@ class NvsPersistence;
 
 class I2sAudioSink : public sendspin::PlayerRoleListener {
 public:
-    I2sAudioSink(gpio_num_t lrck, gpio_num_t bck, gpio_num_t dout,
+    I2sAudioSink(gpio_num_t lrck, gpio_num_t bck, gpio_num_t dout, gpio_num_t xsmt,
                  sendspin::PlayerRole& player, sendspin::SendspinClient* client = nullptr,
                  NvsPersistence* nvs = nullptr);
     ~I2sAudioSink();
@@ -37,9 +37,12 @@ public:
 private:
     esp_err_t reconfigure(uint32_t sample_rate, uint8_t channels, uint8_t bit_depth);
 
+    void set_xsmt(bool unmuted);
+
     gpio_num_t lrck_gpio_;
     gpio_num_t bck_gpio_;
     gpio_num_t dout_gpio_;
+    gpio_num_t xsmt_gpio_;
     sendspin::PlayerRole& player_;
     sendspin::SendspinClient* client_;
     NvsPersistence* nvs_;

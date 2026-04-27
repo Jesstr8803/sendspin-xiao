@@ -43,13 +43,14 @@ Wiring:
 | D3 | GPIO4 | LRCK (LCK / WS) |
 | D4 | GPIO5 | BCK |
 | D5 | GPIO6 | DIN |
+| D8 | GPIO7 | XSMT (optional — see DAC jumpers below) |
 | 3V3 | — | VIN |
 | GND | — | GND |
 
 DAC solder jumpers (on the back of most PCM5102A breakouts):
 - `H1L → L` (FLT: normal filter)
 - `H2L → L` (DEMP: de-emphasis off)
-- `H3L → H` (XSMT: unmuted — required, or output is silent)
+- `H3L → H` (XSMT: unmuted — required, or output is silent). **Optional mod for lower noise floor:** lift this jumper and run a wire from XSMT to XIAO **D8 (GPIO7)** instead. The firmware will then drive XSMT low when idle (silences the chip's hiss between tracks) and high during playback. Set `CONFIG_PCM_XSMT_GPIO = -1` if you keep the jumper bridged.
 - `H4L → L` (FMT: I²S format)
 - Front jumper: `SCK → GND` (enables internal PLL — required for ESP32 I²S which has no MCLK out by default)
 
@@ -247,7 +248,7 @@ In `main/main.cpp`, also worth editing:
 
 - [x] OTA updates over WiFi
 - [x] SoftAP captive portal for first-boot WiFi provisioning
-- [ ] Hardware-level mute via PCM5102A's XSMT pin (low-priority polish — software mute is fine in practice)
+- [x] Hardware-level mute via PCM5102A's XSMT pin — drive from D8/GPIO7, lift the H3L jumper to enable
 - [ ] Fade-in on `stream_start` (decided against — would fade between tracks in a queue too)
 - [ ] Debug the Opus decoder format path
 - [x] Expanded `/status` endpoint with version, uptime, RSSI, heap, MAC for monitoring

@@ -32,6 +32,16 @@ menu "Sendspin XIAO"
         int "I2S DOUT (data out) GPIO"
         default 6
 
+    config PCM_XSMT_GPIO
+        int "PCM5102A XSMT (soft-mute) GPIO (-1 to disable, leaves XSMT jumper bridged)"
+        default 7
+        help
+            Drives the PCM5102A's XSMT pin. Driven LOW = analog output muted
+            (silences the chip's idle hiss); HIGH = unmuted.
+            Requires lifting the H3L solder jumper on the DAC breakout and
+            wiring XSMT to this GPIO. Set to -1 to disable the firmware mute
+            and rely on the H3L jumper holding XSMT high permanently.
+
     config STATUS_LED_GPIO
         int "Status LED GPIO (-1 to disable)"
         default 21

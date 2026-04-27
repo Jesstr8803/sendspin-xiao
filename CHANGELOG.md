@@ -1,5 +1,15 @@
 ## [Unreleased]
 
+## [v0.2.4] - 2026-04-27
+
+### Added
+- Hardware mute support via PCM5102A's XSMT pin. When `CONFIG_PCM_XSMT_GPIO`
+  is set (default GPIO 7 / D8), the firmware drives XSMT low between tracks
+  and high during playback — silences the DAC's idle noise floor.
+  Requires lifting the H3L jumper on the DAC breakout and wiring XSMT to
+  the GPIO. Set `CONFIG_PCM_XSMT_GPIO = -1` to disable and keep the H3L
+  jumper bridged (original behavior).
+
 ## [v0.2.3] - 2026-04-27
 
 ### Added

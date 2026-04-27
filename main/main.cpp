@@ -137,6 +137,8 @@ extern "C" void app_main() {
         static_cast<gpio_num_t>(CONFIG_I2S_LRCK_GPIO),
         static_cast<gpio_num_t>(CONFIG_I2S_BCK_GPIO),
         static_cast<gpio_num_t>(CONFIG_I2S_DOUT_GPIO),
+        CONFIG_PCM_XSMT_GPIO < 0 ? GPIO_NUM_NC
+                                 : static_cast<gpio_num_t>(CONFIG_PCM_XSMT_GPIO),
         player, &client, &nvs_persistence);
     ESP_ERROR_CHECK(i2s_sink.init());
 
