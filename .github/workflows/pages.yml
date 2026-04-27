@@ -6,8 +6,13 @@ on:
     paths:
       - 'web-flasher/**'
       - '.github/workflows/pages.yml'
-  release:
-    types: [published]
+  # `release: published` does NOT fire when the release is created by a
+  # GITHUB_TOKEN-driven workflow (loop prevention). Listen for the release
+  # workflow completing instead so v* tags auto-redeploy the flasher.
+  workflow_run:
+    workflows: ["Build firmware and publish release"]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -21,6 +26,8 @@ concurrency:
 
 jobs:
   deploy:
+    # workflow_run fires on success/failure/cancelled — only deploy on success.
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
