@@ -1,5 +1,14 @@
 ## [Unreleased]
 
+## [v0.2.5] - 2026-04-27
+
+### Fixed
+- XSMT now also unmutes inside `on_audio_write` as a belt-and-suspenders
+  trigger. v0.2.4 only unmuted in `on_stream_start`, but that event isn't
+  guaranteed to fire on every resume (e.g. mid-track resume after a
+  device reboot), leaving the DAC muted while audio data was actually
+  flowing.
+
 ## [v0.2.4] - 2026-04-27
 
 ### Added
