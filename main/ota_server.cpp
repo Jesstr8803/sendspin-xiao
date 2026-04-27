@@ -3,12 +3,16 @@
 #include <cstring>
 #include <string>
 
+#include "esp_app_desc.h"
 #include "esp_app_format.h"
 #include "esp_http_server.h"
 #include "esp_log.h"
+#include "esp_mac.h"
 #include "esp_ota_ops.h"
 #include "esp_partition.h"
 #include "esp_system.h"
+#include "esp_timer.h"
+#include "esp_wifi.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -145,12 +149,41 @@ esp_err_t handle_forget_wifi(httpd_req_t* req) {
 
 esp_err_t handle_status(httpd_req_t* req) {
     const esp_partition_t* running = esp_ota_get_running_partition();
-    char body[256];
+    const esp_app_desc_t* app = esp_app_get_description();
+
+    // RSSI is best-effort — fails if WiFi isn't yet up. Report 0 in that case.
+    wifi_ap_record_t ap{};
+    int rssi = (esp_wifi_sta_get_ap_info(&ap) == ESP_OK) ? ap.rssi : 0;
+
+    uint8_t mac[6] = {};
+    esp_read_mac(mac, ESP_MAC_WIFI_STA);
+
+    char body[512];
     snprintf(body, sizeof(body),
-             "{\"running_partition\":\"%s\",\"address\":\"0x%lx\",\"size\":%lu}\n",
+             "{"
+             "\"version\":\"%s\","
+             "\"build_date\":\"%s %s\","
+             "\"idf_version\":\"%s\","
+             "\"running_partition\":\"%s\","
+             "\"address\":\"0x%lx\","
+             "\"size\":%lu,"
+             "\"uptime_s\":%lld,"
+             "\"free_heap\":%lu,"
+             "\"min_free_heap\":%lu,"
+             "\"rssi\":%d,"
+             "\"mac\":\"%02x:%02x:%02x:%02x:%02x:%02x\""
+             "}\n",
+             app ? app->version : "unknown",
+             app ? app->date : "?", app ? app->time : "?",
+             app ? app->idf_ver : "?",
              running ? running->label : "unknown",
              running ? (unsigned long)running->address : 0,
-             running ? (unsigned long)running->size : 0);
+             running ? (unsigned long)running->size : 0,
+             (long long)(esp_timer_get_time() / 1000000),
+             (unsigned long)esp_get_free_heap_size(),
+             (unsigned long)esp_get_minimum_free_heap_size(),
+             rssi,
+             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
     httpd_resp_set_type(req, "application/json");
     httpd_resp_sendstr(req, body);
     return ESP_OK;

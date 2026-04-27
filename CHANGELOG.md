@@ -1,5 +1,13 @@
 ## [Unreleased]
 
+## [v0.2.3] - 2026-04-27
+
+### Added
+- `GET /status` now returns version, build date, ESP-IDF version, uptime,
+  free / min-free heap, RSSI, and MAC alongside the running OTA partition.
+  Lets you verify which firmware is actually running after an OTA without
+  needing serial access.
+
 ## [v0.2.2] - 2026-04-27
 
 ### Changed
