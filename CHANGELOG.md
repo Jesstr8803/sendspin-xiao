@@ -1,5 +1,19 @@
 ## [Unreleased]
 
+## [v0.2.2] - 2026-04-27
+
+### Changed
+- `software_version` reported to Music Assistant is now auto-derived from
+  `git describe --tags --dirty` at build time (via ESP-IDF's
+  `esp_app_get_description()`). No more manually bumping a hard-coded
+  string each release.
+
+### Fixed
+- Pages workflow now correctly redeploys the web flasher after every
+  release. The `workflow_run` trigger had a `branches: [main]` filter
+  that silently never matched tag-triggered upstream runs (their
+  `head_branch` is the tag, not main).
+
 ## [v0.2.1] - 2026-04-27
 
 ### Fixed
