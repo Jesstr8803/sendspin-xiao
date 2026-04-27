@@ -8,11 +8,13 @@ on:
       - '.github/workflows/pages.yml'
   # `release: published` does NOT fire when the release is created by a
   # GITHUB_TOKEN-driven workflow (loop prevention). Listen for the release
-  # workflow completing instead so v* tags auto-redeploy the flasher.
+  # workflow completing instead so v* tags auto-redeploy the flasher. Note
+  # we deliberately don't filter on `branches:` — tag-triggered upstreams
+  # set head_branch to the tag (e.g. v0.2.1), not main, so a branch filter
+  # would silently never match. The job-level `if:` guards on conclusion.
   workflow_run:
     workflows: ["Build firmware and publish release"]
     types: [completed]
-    branches: [main]
   workflow_dispatch:
 
 permissions:

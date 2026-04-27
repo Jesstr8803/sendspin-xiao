@@ -4,6 +4,7 @@
 #include <string>
 #include <thread>
 
+#include "esp_app_desc.h"
 #include "esp_log.h"
 #include "esp_mac.h"
 #include "esp_pthread.h"
@@ -107,7 +108,12 @@ extern "C" void app_main() {
     cfg.name = device_name;
     cfg.product_name = "XIAO ESP32-S3 + PCM5102A";
     cfg.manufacturer = "DIY";
-    cfg.software_version = "0.2.1";
+    // ESP-IDF auto-populates this from `git describe --tags --dirty` at
+    // build time, so it always tracks the released tag (e.g. "v0.2.1") or
+    // the dev tree it was built from (e.g. "v0.2.1-3-gabc-dirty"). Strip a
+    // leading "v" so MA shows "0.2.1" rather than "v0.2.1".
+    const char* idf_ver = esp_app_get_description()->version;
+    cfg.software_version = (idf_ver[0] == 'v') ? idf_ver + 1 : idf_ver;
     cfg.httpd_psram_stack = true;
     cfg.time_burst_interval_ms = 2000;
     cfg.time_burst_size = 16;
