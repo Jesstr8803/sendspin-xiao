@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+## [v0.2.1] - 2026-04-27
+
+### Fixed
+- Software version reported to Music Assistant was stale (`0.1.0`) — now
+  matches the release tag.
+
 ## [v0.2.0] - 2026-04-27
 
 ### Added

@@ -107,7 +107,7 @@ extern "C" void app_main() {
     cfg.name = device_name;
     cfg.product_name = "XIAO ESP32-S3 + PCM5102A";
     cfg.manufacturer = "DIY";
-    cfg.software_version = "0.1.0";
+    cfg.software_version = "0.2.1";
     cfg.httpd_psram_stack = true;
     cfg.time_burst_interval_ms = 2000;
     cfg.time_burst_size = 16;
