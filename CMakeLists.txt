@@ -15,7 +15,13 @@ target_link_libraries(${SENDSPIN_LIB} PUBLIC
     idf::esphome__micro-opus
 )
 
-# GCC 14.2 (esp-idf 5.5.1 toolchain) trips -Wmaybe-uninitialized inside
-# sendspin-cpp's ShadowSlot<T>::reset()/take() when T contains an
-# optional<string>. False-positive — silence it for this dep only.
-target_compile_options(${SENDSPIN_LIB} PRIVATE -Wno-error=maybe-uninitialized)
+# GCC 14.2 (esp-idf 5.5.1 toolchain) trips -Wmaybe-uninitialized in
+# sendspin-cpp (ShadowSlot<T>) and the bundled opus silk decoder
+# (NLSF2A.c cos_LSF_QA). All false positives — and we can't patch the
+# managed components. Silence the -Werror for the affected deps.
+foreach(LIB
+        ${SENDSPIN_LIB}
+        idf::esphome__micro-flac
+        idf::esphome__micro-opus)
+    target_compile_options(${LIB} PRIVATE -Wno-error=maybe-uninitialized)
+endforeach()
