@@ -250,7 +250,7 @@ In `main/main.cpp`, also worth editing:
 - [ ] Hardware-level mute via PCM5102A's XSMT pin (low-priority polish — software mute is fine in practice)
 - [ ] Fade-in on `stream_start` (decided against — would fade between tracks in a queue too)
 - [ ] Debug the Opus decoder format path
-- [ ] Expanded `/status` endpoint with uptime, RSSI, heap, sync error for monitoring
+- [x] Expanded `/status` endpoint with version, uptime, RSSI, heap, MAC for monitoring
 
 ## License
 
