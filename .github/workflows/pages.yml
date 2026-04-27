@@ -29,21 +29,40 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Fetch latest release manifest
+      - name: Stage release binary into web-flasher
         run: |
-          # Pull the manifest.json from the latest release if one exists; that
-          # version always points at correct asset URLs for the released build.
+          # GitHub release assets don't serve CORS headers, so the browser can't
+          # fetch them from a different origin (the Pages site). Download the
+          # merged binary into web-flasher/ and rewrite manifest.json to use a
+          # relative path — Pages serves static files with permissive CORS.
           set -e
           LATEST_TAG=$(curl -s "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest" \
                         | grep -oP '"tag_name":\s*"\K[^"]+' || true)
-          if [ -n "$LATEST_TAG" ]; then
-            echo "Using manifest from release ${LATEST_TAG}"
-            curl -fsSL "https://github.com/${GITHUB_REPOSITORY}/releases/download/${LATEST_TAG}/manifest.json" \
-                 -o web-flasher/manifest.json
-          else
-            echo "No release yet; manifest.json from repo will be used (likely broken)"
+          if [ -z "$LATEST_TAG" ]; then
+            echo "No release yet; skipping binary stage."
+            exit 0
           fi
-          cat web-flasher/manifest.json || true
+          echo "Staging assets from release ${LATEST_TAG}"
+          curl -fsSL "https://github.com/${GITHUB_REPOSITORY}/releases/download/${LATEST_TAG}/sendspin-xiao-merged.bin" \
+               -o web-flasher/sendspin-xiao-merged.bin
+          cat > web-flasher/manifest.json <<EOF
+          {
+            "name": "Sendspin XIAO",
+            "version": "${LATEST_TAG}",
+            "home_assistant_domain": "music_assistant",
+            "new_install_prompt_erase": true,
+            "builds": [
+              {
+                "chipFamily": "ESP32-S3",
+                "parts": [
+                  { "path": "sendspin-xiao-merged.bin", "offset": 0 }
+                ]
+              }
+            ]
+          }
+          EOF
+          ls -la web-flasher/
+          cat web-flasher/manifest.json
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
