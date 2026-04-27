@@ -11,7 +11,12 @@ If you just want to flash this onto your XIAO and use it (not build/develop):
 1. Open <https://Jesstr8803.github.io/sendspin-xiao/> in **Chrome, Edge, or Opera**
 2. Plug your XIAO ESP32-S3 in via USB-C
 3. Click **Install** — your browser writes the firmware directly via WebSerial. ~30 seconds.
-4. Device boots into WiFi setup mode (open SSID `SendspinXIAO-XXXXXX`); follow the on-device prompts.
+4. Device boots into WiFi setup mode (open SSID `SendspinXIAO-XXXXXX`); follow the on-device prompts. You can name the endpoint here too (shows up in Music Assistant).
+5. After it joins WiFi, Music Assistant should auto-discover the new player.
+
+Updates after the first install are pushed over WiFi — see the OTA section below.
+
+Versions and what changed in each: see [CHANGELOG.md](CHANGELOG.md).
 
 For the manual `esptool.py` route or to build from source, see the rest of this README.
 
@@ -115,7 +120,8 @@ On first build, the Component Manager fetches `sendspin/sendspin-cpp` and its de
 
 ## Boot flow
 
-1. Init NVS, WiFi STA, wait for IP. Max TX power, permanent `WIFI_PS_NONE`, 802.11 b/g/n.
+0. Init NVS. Try saved WiFi credentials → Kconfig defaults. If neither is usable (no NVS entry AND Kconfig SSID is the placeholder `"your-wifi-ssid"`, OR STA connect failed after retries), drop into the captive-portal provisioning flow described above and stay there until the user submits creds.
+1. Init WiFi STA, wait for IP. Max TX power, permanent `WIFI_PS_NONE`, 802.11 b/g/n.
 2. Advertise `_sendspin._tcp` on port 8928 via mDNS, TXT `path=/sendspin`.
 3. Construct `SendspinClient` with time-burst interval 2s × 16 samples for fast Kalman convergence.
 4. Add the player role with FLAC/Opus/PCM format advertisements.
@@ -148,8 +154,9 @@ When the device can't connect, it spins up an open SoftAP named `SendspinXIAO-XX
 
 1. Connect a phone or laptop to that network
 2. The captive portal popup should appear automatically. If it doesn't, open a browser and go to **`http://192.168.4.1/`**
-3. Pick your WiFi network from the dropdown (or type a hidden SSID manually), enter the password
-4. Hit **Save and connect** — the device saves the credentials to NVS and reboots into normal STA mode
+3. (Optional) Type a friendly **device name** at the top — this is how the endpoint shows up in Music Assistant. Leave blank to keep the Kconfig default (`Sendspin XIAO Native`).
+4. Pick your WiFi network from the dropdown (or type a hidden SSID manually), enter the password
+5. Hit **Save and connect** — the device saves credentials + name to NVS and reboots into normal STA mode
 
 **Re-trigger provisioning** without flashing: the OTA server has a `/forget-wifi` endpoint:
 
@@ -212,8 +219,8 @@ The XIAO's onboard orange LED (GPIO21, active-low by default) blinks to indicate
 
 All under `menuconfig → Sendspin XIAO`:
 
-- `WIFI_SSID`, `WIFI_PASSWORD` — obvious
-- `DEVICE_NAME` — Music Assistant display name
+- `WIFI_SSID`, `WIFI_PASSWORD` — *fallback only*; the captive portal flow above is the normal way to set these. Leave them as the defaults (`your-wifi-ssid` / `your-wifi-password`) and the firmware will go straight to provisioning on a fresh NVS.
+- `DEVICE_NAME` — Music Assistant display name. Also overridable from the captive portal (saved to NVS, takes precedence over this Kconfig value at next boot).
 - `SENDSPIN_PORT` / `SENDSPIN_PATH` — defaults 8928 and `/sendspin` match the Sendspin spec defaults
 - `I2S_LRCK_GPIO`, `I2S_BCK_GPIO`, `I2S_DOUT_GPIO` — in case you want different wiring
 - `STATUS_LED_GPIO`, `STATUS_LED_ACTIVE_LOW` — set GPIO to -1 to disable
