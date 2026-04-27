@@ -1,0 +1,13 @@
+{
+  "name": "Sendspin XIAO",
+  "version": "placeholder-no-release-yet",
+  "new_install_prompt_erase": true,
+  "builds": [
+    {
+      "chipFamily": "ESP32-S3",
+      "parts": [
+        { "path": "https://github.com/Jesstr8803/sendspin-xiao/releases/latest/download/sendspin-xiao-merged.bin", "offset": 0 }
+      ]
+    }
+  ]
+}

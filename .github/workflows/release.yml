@@ -1,0 +1,90 @@
+name: Build firmware and publish release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build firmware (ESP-IDF v5.5)
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.5
+          target: esp32s3
+          path: '.'
+
+      - name: Stage release artifacts
+        run: |
+          mkdir -p release
+          cp build/bootloader/bootloader.bin       release/bootloader.bin
+          cp build/partition_table/partition-table.bin release/partition-table.bin
+          cp build/ota_data_initial.bin            release/ota_data_initial.bin
+          cp build/sendspin-xiao.bin               release/sendspin-xiao.bin
+          # Esptool-compatible merged image for one-shot flashing
+          python -m esptool --chip esp32s3 merge_bin -o release/sendspin-xiao-merged.bin \
+              --flash_mode dio --flash_freq 80m --flash_size 8MB \
+              0x0      release/bootloader.bin \
+              0x8000   release/partition-table.bin \
+              0xf000   release/ota_data_initial.bin \
+              0x20000  release/sendspin-xiao.bin
+          ls -la release/
+
+      - name: Generate web-flasher manifest
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+          BASE="https://github.com/${GITHUB_REPOSITORY}/releases/download/${VERSION}"
+          mkdir -p web-flasher
+          cat > web-flasher/manifest.json <<EOF
+          {
+            "name": "Sendspin XIAO",
+            "version": "${VERSION}",
+            "home_assistant_domain": "music_assistant",
+            "new_install_prompt_erase": true,
+            "builds": [
+              {
+                "chipFamily": "ESP32-S3",
+                "parts": [
+                  { "path": "${BASE}/sendspin-xiao-merged.bin", "offset": 0 }
+                ]
+              }
+            ]
+          }
+          EOF
+          cp web-flasher/manifest.json release/manifest.json
+          cat release/manifest.json
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/bootloader.bin
+            release/partition-table.bin
+            release/ota_data_initial.bin
+            release/sendspin-xiao.bin
+            release/sendspin-xiao-merged.bin
+            release/manifest.json
+          generate_release_notes: true
+          body: |
+            ## Flash instructions
+
+            ### Easiest (web flasher)
+            Open <https://Jesstr8803.github.io/sendspin-xiao/> in Chrome or Edge, plug your XIAO ESP32-S3 in, hit **Install**.
+
+            ### Manual (esptool.py)
+            Install esptool: `pip install esptool`. Then with the XIAO plugged in:
+            ```
+            python -m esptool --chip esp32s3 -p <PORT> --baud 460800 write_flash 0x0 sendspin-xiao-merged.bin
+            ```
+            Replace `<PORT>` with `COM7` (Windows) or `/dev/ttyUSB0` etc.
+
+            ### Subsequent updates (no USB)
+            Use `tools/ota_push.py` from the repo, or POST the `sendspin-xiao.bin` to the device's `/ota` endpoint.

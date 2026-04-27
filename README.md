@@ -4,6 +4,17 @@ Standalone ESP-IDF firmware for a **Seeed Studio XIAO ESP32-S3** + **PCM5102A** 
 
 Repository: <https://github.com/Jesstr8803/sendspin-xiao>
 
+## Quick install (no toolchain needed)
+
+If you just want to flash this onto your XIAO and use it (not build/develop):
+
+1. Open <https://Jesstr8803.github.io/sendspin-xiao/> in **Chrome, Edge, or Opera**
+2. Plug your XIAO ESP32-S3 in via USB-C
+3. Click **Install** — your browser writes the firmware directly via WebSerial. ~30 seconds.
+4. Device boots into WiFi setup mode (open SSID `SendspinXIAO-XXXXXX`); follow the on-device prompts.
+
+For the manual `esptool.py` route or to build from source, see the rest of this README.
+
 No ESPHome required — this is pure ESP-IDF consuming the official `sendspin-cpp` SDK directly.
 
 ## Why another Sendspin endpoint?

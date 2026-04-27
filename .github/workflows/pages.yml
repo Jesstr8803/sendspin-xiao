@@ -1,0 +1,58 @@
+name: Deploy web flasher to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web-flasher/**'
+      - '.github/workflows/pages.yml'
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch latest release manifest
+        run: |
+          # Pull the manifest.json from the latest release if one exists; that
+          # version always points at correct asset URLs for the released build.
+          set -e
+          LATEST_TAG=$(curl -s "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest" \
+                        | grep -oP '"tag_name":\s*"\K[^"]+' || true)
+          if [ -n "$LATEST_TAG" ]; then
+            echo "Using manifest from release ${LATEST_TAG}"
+            curl -fsSL "https://github.com/${GITHUB_REPOSITORY}/releases/download/${LATEST_TAG}/manifest.json" \
+                 -o web-flasher/manifest.json
+          else
+            echo "No release yet; manifest.json from repo will be used (likely broken)"
+          fi
+          cat web-flasher/manifest.json || true
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./web-flasher
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

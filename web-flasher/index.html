@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sendspin XIAO firmware installer</title>
+  <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
+  <style>
+    body {
+      font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      max-width: 640px;
+      margin: 2em auto;
+      padding: 0 1.5em;
+      color: #1a1a1a;
+      background: #fafafa;
+    }
+    h1 { font-size: 1.6em; margin-bottom: 0.2em; }
+    .subtitle { color: #666; margin-top: 0; }
+    .install-row { margin: 2em 0; padding: 1.5em; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    code { background: #f0f0f0; padding: 0.15em 0.4em; border-radius: 3px; font-size: 0.9em; }
+    a { color: #0a7; }
+    .note { font-size: 0.9em; color: #555; margin-top: 1em; padding: 0.8em 1em; background: #fff8dd; border-left: 3px solid #d8a800; border-radius: 4px; }
+    .warn { font-size: 0.9em; color: #555; margin-top: 1em; padding: 0.8em 1em; background: #ffe8e8; border-left: 3px solid #c00; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Sendspin XIAO</h1>
+  <p class="subtitle">Native ESP-IDF firmware for a Seeed XIAO ESP32-S3 + PCM5102A DAC.</p>
+  <p>One-click install via your browser. Requires Chrome, Edge, or Opera (WebSerial API).</p>
+
+  <div class="install-row">
+    <esp-web-install-button manifest="manifest.json"></esp-web-install-button>
+  </div>
+
+  <div class="note">
+    <strong>Before flashing:</strong> wire your XIAO ESP32-S3 to a PCM5102A DAC per the
+    <a href="https://github.com/Jesstr8803/sendspin-xiao#wiring">wiring guide in the README</a>.
+    Plug the XIAO into your computer with USB-C, then click <strong>Install</strong> above.
+  </div>
+
+  <div class="warn">
+    <strong>After flashing:</strong> the device will boot into WiFi provisioning mode. Connect a phone or laptop
+    to the <code>SendspinXIAO-XXXXXX</code> open network that appears, browse to <code>http://192.168.4.1</code>,
+    and enter your home WiFi credentials. The device will then join your network and appear in
+    <a href="https://music-assistant.io">Music Assistant</a>.
+  </div>
+
+  <p style="margin-top: 3em; font-size: 0.85em; color: #888;">
+    Source: <a href="https://github.com/Jesstr8803/sendspin-xiao">github.com/Jesstr8803/sendspin-xiao</a> ·
+    Built on the <a href="https://github.com/Sendspin/sendspin-cpp">Sendspin protocol SDK</a> ·
+    Hardware design inspired by <a href="https://github.com/RealDeco/SendspinZero">SendspinZero</a>
+  </p>
+</body>
+</html>
