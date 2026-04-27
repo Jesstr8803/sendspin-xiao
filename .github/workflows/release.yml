@@ -15,23 +15,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Pre-seed sdkconfig with values Component Manager needs
-        # CM evaluates `if: $CONFIG{...}` clauses in component manifests before
-        # Kconfig has been processed; on a fresh CI build with no sdkconfig it
-        # can't find SENDSPIN_ENABLE_PLAYER and aborts. Writing these here lets
-        # CM resolve cleanly. Kconfig will overwrite/expand from
-        # sdkconfig.defaults as part of the normal build.
+      - name: Pre-seed sdkconfig.json for Component Manager
+        # CM reads `$CONFIG{...}` from <build_dir>/config/sdkconfig.json. On a
+        # first CI build that file doesn't exist yet, so CM raises
+        # MissingKconfigError for SENDSPIN_ENABLE_PLAYER (used in if-clauses
+        # in sendspin-cpp's manifest). We pre-create the JSON with the role
+        # flags. IDF_BUILD_V2=y tells CM to load this file on first run too.
         run: |
-          cat > sdkconfig <<'EOF'
-          CONFIG_SENDSPIN_ENABLE_PLAYER=y
-          CONFIG_SENDSPIN_ENABLE_CONTROLLER=y
-          CONFIG_SENDSPIN_ENABLE_METADATA=y
-          CONFIG_SENDSPIN_ENABLE_ARTWORK=
-          CONFIG_SENDSPIN_ENABLE_VISUALIZER=
+          mkdir -p build/config
+          cat > build/config/sdkconfig.json <<'EOF'
+          {
+            "SENDSPIN_ENABLE_PLAYER": true,
+            "SENDSPIN_ENABLE_CONTROLLER": true,
+            "SENDSPIN_ENABLE_METADATA": true,
+            "SENDSPIN_ENABLE_ARTWORK": false,
+            "SENDSPIN_ENABLE_VISUALIZER": false
+          }
           EOF
 
       - name: Build firmware (ESP-IDF v5.5)
         uses: espressif/esp-idf-ci-action@v1
+        env:
+          IDF_BUILD_V2: 'y'
         with:
           esp_idf_version: v5.5
           target: esp32s3
