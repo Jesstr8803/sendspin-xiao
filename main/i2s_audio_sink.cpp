@@ -4,6 +4,7 @@
 
 #include <cstring>
 
+#include "driver/gpio.h"
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
@@ -13,15 +14,20 @@
 
 static const char* TAG = "i2s_sink";
 
-I2sAudioSink::I2sAudioSink(gpio_num_t lrck, gpio_num_t bck, gpio_num_t dout,
+I2sAudioSink::I2sAudioSink(gpio_num_t lrck, gpio_num_t bck, gpio_num_t dout, gpio_num_t xsmt,
                             sendspin::PlayerRole& player,
                             sendspin::SendspinClient* client, NvsPersistence* nvs)
-    : lrck_gpio_(lrck), bck_gpio_(bck), dout_gpio_(dout), player_(player),
-      client_(client), nvs_(nvs) {
+    : lrck_gpio_(lrck), bck_gpio_(bck), dout_gpio_(dout), xsmt_gpio_(xsmt),
+      player_(player), client_(client), nvs_(nvs) {
     if (nvs_) {
         if (auto v = nvs_->load_volume()) volume_ = *v;
         if (auto m = nvs_->load_muted()) muted_ = *m;
     }
+}
+
+void I2sAudioSink::set_xsmt(bool unmuted) {
+    if (xsmt_gpio_ == GPIO_NUM_NC) return;
+    gpio_set_level(xsmt_gpio_, unmuted ? 1 : 0);
 }
 
 I2sAudioSink::~I2sAudioSink() {
@@ -55,6 +61,21 @@ void I2sAudioSink::notify_task(void* arg) {
 }
 
 esp_err_t I2sAudioSink::init() {
+    if (xsmt_gpio_ != GPIO_NUM_NC) {
+        gpio_config_t cfg{};
+        cfg.pin_bit_mask = 1ULL << xsmt_gpio_;
+        cfg.mode = GPIO_MODE_OUTPUT;
+        cfg.pull_up_en = GPIO_PULLUP_DISABLE;
+        cfg.pull_down_en = GPIO_PULLDOWN_DISABLE;
+        cfg.intr_type = GPIO_INTR_DISABLE;
+        gpio_config(&cfg);
+        // Start muted — PCM5102A's XSMT pulldown means it would mute on its own
+        // until we explicitly drive high, but make it explicit so the state is
+        // unambiguous in logs.
+        set_xsmt(false);
+        ESP_LOGI(TAG, "XSMT mute on GPIO %d (idle = mute, stream_start = unmute)",
+                 (int)xsmt_gpio_);
+    }
     sent_event_queue_ = xQueueCreate(16, sizeof(SentEvent));
     xTaskCreatePinnedToCore(&I2sAudioSink::notify_task, "notify_task", 4096, this, 8,
                             nullptr, 1);
@@ -209,14 +230,18 @@ void I2sAudioSink::on_stream_start() {
         return;
     }
     reconfigure(*params.sample_rate, *params.channels, *params.bit_depth);
+    set_xsmt(true);
 }
 
 void I2sAudioSink::on_stream_end() {
     ESP_LOGI(TAG, "on_stream_end (leaving channel enabled)");
+    // Don't mute here — on_stream_end fires between tracks in a queue and
+    // muting would click. on_stream_clear is the actual "audio is done".
 }
 
 void I2sAudioSink::on_stream_clear() {
     ESP_LOGI(TAG, "on_stream_clear (flushing DMA)");
+    set_xsmt(false);
     if (tx_handle_ && channel_enabled_) {
         i2s_channel_disable(tx_handle_);
         i2s_channel_enable(tx_handle_);
