@@ -38,7 +38,7 @@ jobs:
         env:
           IDF_BUILD_V2: 'y'
         with:
-          esp_idf_version: v5.5
+          esp_idf_version: v5.5.1
           target: esp32s3
           path: '.'
 
