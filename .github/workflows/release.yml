@@ -85,6 +85,42 @@ jobs:
           cp web-flasher/manifest.json release/manifest.json
           cat release/manifest.json
 
+      - name: Extract release notes from CHANGELOG.md
+        id: notes
+        run: |
+          # Pull the curated section for this tag out of CHANGELOG.md and
+          # prepend it to the static flash instructions. awk grabs everything
+          # between `## [vX.Y.Z]` and the next `## [` heading.
+          VERSION="${GITHUB_REF_NAME}"
+          {
+            if [ -f CHANGELOG.md ]; then
+              awk -v ver="${VERSION}" '
+                $0 ~ "^## \\["ver"\\]" { in_section=1; next }
+                in_section && /^## \[/  { exit }
+                in_section              { print }
+              ' CHANGELOG.md
+            fi
+            cat <<'EOF'
+
+          ## Flash instructions
+
+          ### Easiest (web flasher)
+          Open <https://Jesstr8803.github.io/sendspin-xiao/> in Chrome or Edge, plug your XIAO ESP32-S3 in, hit **Install**.
+
+          ### Manual (esptool.py)
+          Install esptool: `pip install esptool`. Then with the XIAO plugged in:
+          ```
+          python -m esptool --chip esp32s3 -p <PORT> --baud 460800 write_flash 0x0 sendspin-xiao-merged.bin
+          ```
+          Replace `<PORT>` with `COM7` (Windows) or `/dev/ttyUSB0` etc.
+
+          ### Subsequent updates (no USB)
+          Use `tools/ota_push.py` from the repo, or POST the `sendspin-xiao.bin` to the device's `/ota` endpoint.
+          EOF
+          } > release/RELEASE_NOTES.md
+          echo "--- generated notes ---"
+          cat release/RELEASE_NOTES.md
+
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
@@ -95,19 +131,4 @@ jobs:
             release/sendspin-xiao.bin
             release/sendspin-xiao-merged.bin
             release/manifest.json
-          generate_release_notes: true
-          body: |
-            ## Flash instructions
-
-            ### Easiest (web flasher)
-            Open <https://Jesstr8803.github.io/sendspin-xiao/> in Chrome or Edge, plug your XIAO ESP32-S3 in, hit **Install**.
-
-            ### Manual (esptool.py)
-            Install esptool: `pip install esptool`. Then with the XIAO plugged in:
-            ```
-            python -m esptool --chip esp32s3 -p <PORT> --baud 460800 write_flash 0x0 sendspin-xiao-merged.bin
-            ```
-            Replace `<PORT>` with `COM7` (Windows) or `/dev/ttyUSB0` etc.
-
-            ### Subsequent updates (no USB)
-            Use `tools/ota_push.py` from the repo, or POST the `sendspin-xiao.bin` to the device's `/ota` endpoint.
+          body_path: release/RELEASE_NOTES.md
