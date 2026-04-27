@@ -144,3 +144,11 @@ bool NvsPersistence::clear_wifi_credentials() {
     // boot logic forces provisioning regardless of Kconfig defaults.
     return save_wifi_credentials("", "");
 }
+
+bool NvsPersistence::save_device_name(const char* name) {
+    return set_str("dev_name", name ? name : "");
+}
+
+std::optional<std::string> NvsPersistence::load_device_name() {
+    return get_str("dev_name");
+}

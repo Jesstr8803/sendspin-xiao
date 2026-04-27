@@ -36,9 +36,11 @@ ul{padding-left:1.2em}
 .muted{color:#777;font-size:0.9em}
 </style>
 </head><body>
-<h1>Sendspin XIAO WiFi setup</h1>
-<p class=muted>Pick a network and enter the password. The device will reboot and connect.</p>
+<h1>Sendspin XIAO setup</h1>
+<p class=muted>Name this endpoint, pick a network, and enter the password. The device will reboot and connect.</p>
 <form method=POST action=/save>
+<label>Device name</label>
+<input name=device_name placeholder="e.g. Living Room XIAO" maxlength=31>
 <label>Network</label>
 <select name=ssid id=ssid>%SCAN%</select>
 <label>Or type SSID</label>
@@ -123,6 +125,7 @@ esp_err_t handle_save(httpd_req_t* req) {
     std::string ssid = url_decode_field(body, "ssid_manual");
     if (ssid.empty()) ssid = url_decode_field(body, "ssid");
     std::string pwd = url_decode_field(body, "password");
+    std::string device_name = url_decode_field(body, "device_name");
 
     if (ssid.empty() || g_nvs == nullptr) {
         httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "missing ssid");
@@ -131,6 +134,11 @@ esp_err_t handle_save(httpd_req_t* req) {
     if (!g_nvs->save_wifi_credentials(ssid.c_str(), pwd.c_str())) {
         httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "nvs write failed");
         return ESP_FAIL;
+    }
+    // Persist the device name only if the user actually typed one — empty
+    // means "fall back to the Kconfig default at next boot".
+    if (!device_name.empty()) {
+        g_nvs->save_device_name(device_name.c_str());
     }
 
     ESP_LOGI(TAG, "saved WiFi creds for SSID '%s', rebooting", ssid.c_str());

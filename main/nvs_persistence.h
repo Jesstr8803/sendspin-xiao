@@ -23,4 +23,7 @@ public:
     std::optional<std::string> load_wifi_ssid();
     std::optional<std::string> load_wifi_password();
     bool clear_wifi_credentials();
+
+    bool save_device_name(const char* name);
+    std::optional<std::string> load_device_name();
 };

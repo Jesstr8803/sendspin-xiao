@@ -86,7 +86,14 @@ extern "C" void app_main() {
         while (true) vTaskDelay(pdMS_TO_TICKS(1000));
     }
 
-    ESP_ERROR_CHECK(mdns_advertise_sendspin(CONFIG_DEVICE_NAME, CONFIG_SENDSPIN_PORT,
+    auto saved_name = nvs_persistence.load_device_name();
+    std::string device_name = (saved_name && !saved_name->empty())
+                                  ? *saved_name
+                                  : std::string(CONFIG_DEVICE_NAME);
+    ESP_LOGI(TAG, "device name: '%s'%s", device_name.c_str(),
+             (saved_name && !saved_name->empty()) ? " (from NVS)" : " (from Kconfig)");
+
+    ESP_ERROR_CHECK(mdns_advertise_sendspin(device_name.c_str(), CONFIG_SENDSPIN_PORT,
                                             CONFIG_SENDSPIN_PATH));
 
     if (ota_server_start(CONFIG_OTA_PORT, CONFIG_OTA_TOKEN) == ESP_OK) {
@@ -97,7 +104,7 @@ extern "C" void app_main() {
 
     SendspinClientConfig cfg;
     cfg.client_id = build_client_id();
-    cfg.name = CONFIG_DEVICE_NAME;
+    cfg.name = device_name;
     cfg.product_name = "XIAO ESP32-S3 + PCM5102A";
     cfg.manufacturer = "DIY";
     cfg.software_version = "0.1.0";
