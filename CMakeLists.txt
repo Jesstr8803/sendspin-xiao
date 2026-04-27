@@ -14,3 +14,8 @@ target_link_libraries(${SENDSPIN_LIB} PUBLIC
     idf::esphome__micro-flac
     idf::esphome__micro-opus
 )
+
+# GCC 14.2 (esp-idf 5.5.1 toolchain) trips -Wmaybe-uninitialized inside
+# sendspin-cpp's ShadowSlot<T>::reset()/take() when T contains an
+# optional<string>. False-positive — silence it for this dep only.
+target_compile_options(${SENDSPIN_LIB} PRIVATE -Wno-error=maybe-uninitialized)
