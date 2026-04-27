@@ -43,3 +43,11 @@ CONFIG_MBEDTLS_CMAC_C=y
 CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
 
 CONFIG_LOG_DEFAULT_LEVEL_INFO=y
+
+# sendspin-cpp role selection — must be set before Component Manager resolves
+# optional deps (micro-flac/micro-opus) on a fresh build with no sdkconfig.
+CONFIG_SENDSPIN_ENABLE_PLAYER=y
+CONFIG_SENDSPIN_ENABLE_CONTROLLER=y
+CONFIG_SENDSPIN_ENABLE_METADATA=y
+CONFIG_SENDSPIN_ENABLE_ARTWORK=n
+CONFIG_SENDSPIN_ENABLE_VISUALIZER=n
