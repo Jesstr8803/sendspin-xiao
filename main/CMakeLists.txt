@@ -6,6 +6,8 @@ idf_component_register(
         "mdns_init.cpp"
         "status_led.cpp"
         "nvs_persistence.cpp"
+        "ota_server.cpp"
+        "wifi_provisioning.cpp"
     INCLUDE_DIRS "."
     REQUIRES
         nvs_flash
@@ -15,4 +17,7 @@ idf_component_register(
         driver
         mdns
         pthread
+        app_update
+        esp_http_server
+        esp_app_format
 )

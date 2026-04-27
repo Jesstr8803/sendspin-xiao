@@ -122,6 +122,70 @@ On first build, the Component Manager fetches `sendspin/sendspin-cpp` and its de
 - Reconnects automatically after network drops.
 - Volume and mute state persist across reboots.
 
+## WiFi provisioning (no flashing required)
+
+The device handles its own WiFi setup — you don't need to hardcode credentials in `menuconfig` if you don't want to.
+
+**Boot logic:**
+1. Try WiFi credentials saved in NVS first (set during a previous provisioning)
+2. If those fail OR no creds exist, fall back to Kconfig defaults (whatever's in `WIFI_SSID`/`WIFI_PASSWORD`)
+3. If both fail OR `WIFI_SSID` is the placeholder `"your-wifi-ssid"`, drop into provisioning mode
+
+**Provisioning mode (SoftAP captive portal):**
+
+When the device can't connect, it spins up an open SoftAP named `SendspinXIAO-XXXXXX` (where `XXXXXX` is the last 6 hex digits of its MAC). 
+
+1. Connect a phone or laptop to that network
+2. The captive portal popup should appear automatically. If it doesn't, open a browser and go to **`http://192.168.4.1/`**
+3. Pick your WiFi network from the dropdown (or type a hidden SSID manually), enter the password
+4. Hit **Save and connect** — the device saves the credentials to NVS and reboots into normal STA mode
+
+**Re-trigger provisioning** without flashing: the OTA server has a `/forget-wifi` endpoint:
+
+```bash
+curl -X POST http://<device-ip>:8080/forget-wifi \
+     -H "Authorization: Bearer <your-token>"
+```
+
+(Omit the `-H` line if no token is configured.) Device clears its NVS WiFi creds and reboots into provisioning mode.
+
+## OTA updates (over WiFi)
+
+Once the device is on your network, you can push new firmware wirelessly — no USB required.
+
+**One-time setup:**
+
+1. (Optional) In `menuconfig → Sendspin XIAO`, set **OTA bearer token** if you want to require auth. By default it's empty, meaning anyone on your local network can push firmware. For a personal device on a trusted home network, that's fine.
+2. First-time install still needs a USB flash because the partition table is changing from single-app to dual-OTA layout.
+
+**Subsequent updates:**
+
+```bash
+idf.py build
+python tools/ota_push.py <device-ip>                 # no auth
+python tools/ota_push.py <device-ip> --token <your-token>   # if you set one
+```
+
+The push script can also auto-discover the device via mDNS if you have the `zeroconf` Python package installed (`pip install zeroconf`):
+
+```bash
+pip install zeroconf
+python tools/ota_push.py --token <your-token>           # auto-finds the device
+python tools/ota_push.py --discover-only --token foo    # just lists devices
+```
+
+**Endpoints exposed by the OTA server:**
+- `POST /ota` — accepts a firmware binary as the request body. Requires `Authorization: Bearer <token>` header (if a token is set).
+- `GET /status` — returns JSON with the currently running partition and address.
+- `POST /forget-wifi` — clears stored WiFi credentials and reboots into provisioning mode. Same auth as `/ota`.
+
+**How it works:** the device runs a tiny HTTP server on port 8080 (configurable). On a successful push, the new firmware is written to the inactive OTA slot, marked as the next boot partition, and the device reboots. If the bearer token is missing or wrong, the request is rejected.
+
+**Security notes:**
+- The OTA endpoint is plain HTTP (not HTTPS) for simplicity. Treat it like any local IoT device: only put it on a trusted network.
+- The bearer token is the only access control. Use a long random string.
+- The first byte of the upload is checked against ESP's image magic byte (`0xE9`) so non-firmware uploads are rejected before flash.
+
 ## Status LED patterns
 
 The XIAO's onboard orange LED (GPIO21, active-low by default) blinks to indicate state:
@@ -163,12 +227,12 @@ In `main/main.cpp`, also worth editing:
 
 ## Roadmap
 
-- [ ] OTA updates over WiFi
-- [ ] Fade-in on `stream_start` to eliminate any start-of-stream click
-- [ ] SoftAP captive portal for first-boot WiFi provisioning
-- [ ] Drive the PCM5102A's XSMT pin from a GPIO for hardware-level mute
+- [x] OTA updates over WiFi
+- [x] SoftAP captive portal for first-boot WiFi provisioning
+- [ ] Hardware-level mute via PCM5102A's XSMT pin (low-priority polish — software mute is fine in practice)
+- [ ] Fade-in on `stream_start` (decided against — would fade between tracks in a queue too)
 - [ ] Debug the Opus decoder format path
-- [ ] Optional HTTP `/status` endpoint for monitoring (uptime, RSSI, heap, sync error)
+- [ ] Expanded `/status` endpoint with uptime, RSSI, heap, sync error for monitoring
 
 ## License
 

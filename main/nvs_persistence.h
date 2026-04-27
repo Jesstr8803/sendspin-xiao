@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <string>
 
 #include "sendspin/client.h"
 
@@ -17,4 +18,9 @@ public:
 
     bool save_muted(bool muted);
     std::optional<bool> load_muted();
+
+    bool save_wifi_credentials(const char* ssid, const char* password);
+    std::optional<std::string> load_wifi_ssid();
+    std::optional<std::string> load_wifi_password();
+    bool clear_wifi_credentials();
 };

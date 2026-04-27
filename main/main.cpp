@@ -8,6 +8,7 @@
 #include "esp_mac.h"
 #include "esp_pthread.h"
 #include "esp_wifi.h"
+#include "mdns.h"
 #include "nvs_flash.h"
 #include "sdkconfig.h"
 
@@ -17,8 +18,10 @@
 #include "i2s_audio_sink.h"
 #include "mdns_init.h"
 #include "nvs_persistence.h"
+#include "ota_server.h"
 #include "status_led.h"
 #include "wifi_init.h"
+#include "wifi_provisioning.h"
 
 using namespace sendspin;
 
@@ -55,14 +58,42 @@ extern "C" void app_main() {
         ESP_ERROR_CHECK(nvs_flash_init());
     }
 
-    ESP_LOGI(TAG, "connecting to WiFi '%s'", CONFIG_WIFI_SSID);
-    if (wifi_start_and_wait(CONFIG_WIFI_SSID, CONFIG_WIFI_PASSWORD, 30000) != ESP_OK) {
-        ESP_LOGE(TAG, "WiFi failed to connect, rebooting");
-        esp_restart();
+    static NvsPersistence nvs_persistence;
+
+    auto saved_ssid = nvs_persistence.load_wifi_ssid();
+    auto saved_pwd = nvs_persistence.load_wifi_password();
+    std::string ssid = saved_ssid.value_or(CONFIG_WIFI_SSID);
+    std::string pwd = saved_pwd.value_or(CONFIG_WIFI_PASSWORD);
+
+    bool needs_provisioning = (ssid.empty() || ssid == "your-wifi-ssid");
+    if (!needs_provisioning) {
+        ESP_LOGI(TAG, "connecting to WiFi '%s'%s", ssid.c_str(),
+                 saved_ssid.has_value() ? " (from NVS)" : " (from Kconfig)");
+        if (wifi_start_and_wait(ssid.c_str(), pwd.c_str(), 30000) != ESP_OK) {
+            ESP_LOGW(TAG, "WiFi failed; falling back to provisioning AP");
+            needs_provisioning = true;
+        }
+    }
+
+    if (needs_provisioning) {
+        ESP_LOGI(TAG, "starting WiFi provisioning AP");
+        wifi_init_only();
+        if (wifi_provisioning_start(nvs_persistence, "SendspinXIAO") != ESP_OK) {
+            ESP_LOGE(TAG, "provisioning failed, rebooting");
+            esp_restart();
+        }
+        // Provisioning runs forever (or until user submits and we restart).
+        while (true) vTaskDelay(pdMS_TO_TICKS(1000));
     }
 
     ESP_ERROR_CHECK(mdns_advertise_sendspin(CONFIG_DEVICE_NAME, CONFIG_SENDSPIN_PORT,
                                             CONFIG_SENDSPIN_PATH));
+
+    if (ota_server_start(CONFIG_OTA_PORT, CONFIG_OTA_TOKEN) == ESP_OK) {
+        mdns_service_add(nullptr, "_sendspin-ota", "_tcp", CONFIG_OTA_PORT, nullptr, 0);
+    } else {
+        ESP_LOGW(TAG, "OTA server did not start (no token configured?)");
+    }
 
     SendspinClientConfig cfg;
     cfg.client_id = build_client_id();
@@ -75,8 +106,6 @@ extern "C" void app_main() {
     cfg.time_burst_size = 16;
 
     SendspinClient client(std::move(cfg));
-
-    static NvsPersistence nvs_persistence;
 
     PlayerRoleConfig player_cfg;
     player_cfg.audio_formats = {

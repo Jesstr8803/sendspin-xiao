@@ -40,4 +40,16 @@ menu "Sendspin XIAO"
         bool "Status LED is active-low (XIAO onboard LED is)"
         default y
 
+    config OTA_PORT
+        int "OTA HTTP server port"
+        default 8080
+
+    config OTA_TOKEN
+        string "OTA bearer token (leave empty for no auth — fine on a trusted home network)"
+        default ""
+        help
+            If empty: OTA pushes are accepted from anyone on the local network.
+            If set: push tools must send this in the Authorization: Bearer <token> header.
+            For shared/public networks, set a long random string here.
+
 endmenu
