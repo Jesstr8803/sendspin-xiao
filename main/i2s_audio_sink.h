@@ -55,6 +55,9 @@ private:
 
     std::atomic<int32_t> frames_buffered_{0};
     QueueHandle_t sent_event_queue_{nullptr};
+    std::atomic<int64_t> last_audio_us_{0};
+
+    static void xsmt_idle_task(void* arg);
 
     volatile uint8_t volume_{75};
     volatile bool muted_{false};

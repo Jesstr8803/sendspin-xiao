@@ -73,13 +73,34 @@ esp_err_t I2sAudioSink::init() {
         // until we explicitly drive high, but make it explicit so the state is
         // unambiguous in logs.
         set_xsmt(false);
-        ESP_LOGI(TAG, "XSMT mute on GPIO %d (idle = mute, stream_start = unmute)",
+        ESP_LOGI(TAG, "XSMT mute on GPIO %d (idle = mute, audio_write = unmute)",
                  (int)xsmt_gpio_);
+        xTaskCreatePinnedToCore(&I2sAudioSink::xsmt_idle_task, "xsmt_idle", 2048,
+                                this, 4, nullptr, 1);
     }
     sent_event_queue_ = xQueueCreate(16, sizeof(SentEvent));
     xTaskCreatePinnedToCore(&I2sAudioSink::notify_task, "notify_task", 4096, this, 8,
                             nullptr, 1);
     return reconfigure(48000, 2, 16);
+}
+
+void I2sAudioSink::xsmt_idle_task(void* arg) {
+    auto* self = static_cast<I2sAudioSink*>(arg);
+    constexpr int64_t IDLE_THRESHOLD_US = 1'000'000;  // mute after 1s of no audio
+    bool currently_unmuted = false;
+    for (;;) {
+        vTaskDelay(pdMS_TO_TICKS(250));
+        int64_t last = self->last_audio_us_.load(std::memory_order_relaxed);
+        int64_t now = esp_timer_get_time();
+        bool should_be_unmuted = (last != 0) && (now - last < IDLE_THRESHOLD_US);
+        if (should_be_unmuted != currently_unmuted) {
+            self->set_xsmt(should_be_unmuted);
+            currently_unmuted = should_be_unmuted;
+            ESP_LOGI(TAG, "XSMT %s (idle %lldms)",
+                     should_be_unmuted ? "unmute" : "mute (idle timeout)",
+                     (long long)((now - last) / 1000));
+        }
+    }
 }
 
 esp_err_t I2sAudioSink::reconfigure(uint32_t sample_rate, uint8_t channels, uint8_t bit_depth) {
@@ -161,6 +182,7 @@ size_t I2sAudioSink::on_audio_write(uint8_t* data, size_t length, uint32_t timeo
     // mid-track resume after device reboot). Driving XSMT high here makes the
     // mute always track real audio flow.
     set_xsmt(true);
+    last_audio_us_.store(esp_timer_get_time(), std::memory_order_relaxed);
 
     const uint8_t* write_src = data;
     static uint8_t scratch[32768];

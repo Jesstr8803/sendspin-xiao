@@ -1,5 +1,13 @@
 ## [Unreleased]
 
+## [v0.2.6] - 2026-04-28
+
+### Fixed
+- XSMT now goes back to muted after ~1s of silence even if the stream
+  is still technically active. Previously a paused MA player would leave
+  XSMT high (no on_stream_clear fires on pause), so the chip stayed
+  unmuted and the rail noise leaked through during silence.
+
 ## [v0.2.5] - 2026-04-27
 
 ### Fixed
