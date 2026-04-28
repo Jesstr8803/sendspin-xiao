@@ -1,5 +1,14 @@
 ## [Unreleased]
 
+## [v0.2.10] - 2026-04-28
+
+### Fixed
+- `set_xsmt()` is now edge-triggered: it only writes the GPIO and
+  increments `xsmt_toggles` when the state actually changes. Previously
+  every `on_audio_write` redundantly re-drove the pin high, thrashing
+  the register thousands of times per second and making the counter
+  meaningless. The metric now reports real mute/unmute transitions.
+
 ## [v0.2.9] - 2026-04-28
 
 ### Added

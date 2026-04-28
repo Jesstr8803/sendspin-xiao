@@ -27,6 +27,11 @@ I2sAudioSink::I2sAudioSink(gpio_num_t lrck, gpio_num_t bck, gpio_num_t dout, gpi
 
 void I2sAudioSink::set_xsmt(bool unmuted) {
     if (xsmt_gpio_ == GPIO_NUM_NC) return;
+    // Only touch the GPIO + bump the counter when the state actually changes.
+    // on_audio_write calls this on every audio chunk for safety, so without
+    // this guard we'd thrash the register thousands of times per second.
+    bool prev = xsmt_unmuted_.exchange(unmuted, std::memory_order_relaxed);
+    if (prev == unmuted) return;
     gpio_set_level(xsmt_gpio_, unmuted ? 1 : 0);
     xsmt_toggle_count_.fetch_add(1, std::memory_order_relaxed);
 }

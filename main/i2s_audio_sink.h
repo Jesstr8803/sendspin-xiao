@@ -68,6 +68,7 @@ private:
     std::atomic<int32_t> frames_buffered_{0};
     QueueHandle_t sent_event_queue_{nullptr};
     std::atomic<int64_t> last_audio_us_{0};
+    std::atomic<bool> xsmt_unmuted_{false};
 
     // Metrics — atomic for ISR/task safety. Read via metric_*() getters.
     std::atomic<uint64_t> audio_write_count_{0};
