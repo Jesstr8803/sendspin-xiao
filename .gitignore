@@ -14,6 +14,9 @@ sdkconfig.old
 *.log
 live.log
 
+# Binaries downloaded for ad-hoc OTA pushes
+ota-test/
+
 # Editor / OS
 .vscode/
 .idea/
