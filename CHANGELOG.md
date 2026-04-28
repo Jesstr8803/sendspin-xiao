@@ -1,5 +1,14 @@
 ## [Unreleased]
 
+## [v0.2.9] - 2026-04-28
+
+### Added
+- `/status` now reports an `audio` metrics block: total writes, bytes
+  requested vs written, current frames buffered, stream-start/clear
+  counts, reconfigures, XSMT toggles, and max sub-second audio gap (a
+  proxy for WiFi jitter during playback). Use this to tune buffer
+  size and detect dropouts from data rather than vibes.
+
 ## [v0.2.8] - 2026-04-28
 
 ### Changed

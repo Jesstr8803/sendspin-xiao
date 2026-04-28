@@ -141,6 +141,7 @@ extern "C" void app_main() {
                                  : static_cast<gpio_num_t>(CONFIG_PCM_XSMT_GPIO),
         player, &client, &nvs_persistence);
     ESP_ERROR_CHECK(i2s_sink.init());
+    ota_server_set_sink(&i2s_sink);
 
     DeviceNetworkProvider network_provider;
     WifiPowerListener client_listener;

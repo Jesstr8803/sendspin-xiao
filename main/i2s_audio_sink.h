@@ -33,6 +33,18 @@ public:
                                           i2s_event_data_t* event,
                                           void* user_ctx);
     static void notify_task(void* arg);
+    static void xsmt_idle_task(void* arg);
+
+    // Metrics — read-only snapshots for /status diagnostics.
+    uint64_t metric_audio_writes() const { return audio_write_count_.load(); }
+    uint64_t metric_bytes_requested() const { return bytes_requested_.load(); }
+    uint64_t metric_bytes_written() const { return bytes_written_.load(); }
+    uint32_t metric_stream_starts() const { return stream_start_count_.load(); }
+    uint32_t metric_stream_clears() const { return stream_clear_count_.load(); }
+    uint32_t metric_reconfigures() const { return reconfigure_count_.load(); }
+    uint32_t metric_xsmt_toggles() const { return xsmt_toggle_count_.load(); }
+    uint32_t metric_max_audio_gap_ms() const { return max_audio_gap_ms_.load(); }
+    int32_t metric_frames_buffered() const { return frames_buffered_.load(); }
 
 private:
     esp_err_t reconfigure(uint32_t sample_rate, uint8_t channels, uint8_t bit_depth);
@@ -57,7 +69,15 @@ private:
     QueueHandle_t sent_event_queue_{nullptr};
     std::atomic<int64_t> last_audio_us_{0};
 
-    static void xsmt_idle_task(void* arg);
+    // Metrics — atomic for ISR/task safety. Read via metric_*() getters.
+    std::atomic<uint64_t> audio_write_count_{0};
+    std::atomic<uint64_t> bytes_requested_{0};
+    std::atomic<uint64_t> bytes_written_{0};
+    std::atomic<uint32_t> stream_start_count_{0};
+    std::atomic<uint32_t> stream_clear_count_{0};
+    std::atomic<uint32_t> reconfigure_count_{0};
+    std::atomic<uint32_t> xsmt_toggle_count_{0};
+    std::atomic<uint32_t> max_audio_gap_ms_{0};
 
     volatile uint8_t volume_{75};
     volatile bool muted_{false};
