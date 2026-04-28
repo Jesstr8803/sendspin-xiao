@@ -16,6 +16,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
+#include "i2s_audio_sink.h"
 #include "nvs_persistence.h"
 
 static const char* TAG = "ota_server";
@@ -23,6 +24,7 @@ static const char* TAG = "ota_server";
 namespace {
 
 std::string g_token;
+I2sAudioSink* g_sink = nullptr;
 constexpr size_t OTA_BUF_SIZE = 4096;
 
 bool token_matches(httpd_req_t* req) {
@@ -158,8 +160,8 @@ esp_err_t handle_status(httpd_req_t* req) {
     uint8_t mac[6] = {};
     esp_read_mac(mac, ESP_MAC_WIFI_STA);
 
-    char body[512];
-    snprintf(body, sizeof(body),
+    char body[1024];
+    int n = snprintf(body, sizeof(body),
              "{"
              "\"version\":\"%s\","
              "\"build_date\":\"%s %s\","
@@ -171,8 +173,7 @@ esp_err_t handle_status(httpd_req_t* req) {
              "\"free_heap\":%lu,"
              "\"min_free_heap\":%lu,"
              "\"rssi\":%d,"
-             "\"mac\":\"%02x:%02x:%02x:%02x:%02x:%02x\""
-             "}\n",
+             "\"mac\":\"%02x:%02x:%02x:%02x:%02x:%02x\"",
              app ? app->version : "unknown",
              app ? app->date : "?", app ? app->time : "?",
              app ? app->idf_ver : "?",
@@ -184,6 +185,34 @@ esp_err_t handle_status(httpd_req_t* req) {
              (unsigned long)esp_get_minimum_free_heap_size(),
              rssi,
              mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    if (g_sink && n > 0 && n < (int)sizeof(body)) {
+        n += snprintf(body + n, sizeof(body) - n,
+                ",\"audio\":{"
+                "\"writes\":%llu,"
+                "\"bytes_requested\":%llu,"
+                "\"bytes_written\":%llu,"
+                "\"frames_buffered\":%ld,"
+                "\"stream_starts\":%lu,"
+                "\"stream_clears\":%lu,"
+                "\"reconfigures\":%lu,"
+                "\"xsmt_toggles\":%lu,"
+                "\"max_audio_gap_ms\":%lu"
+                "}",
+                (unsigned long long)g_sink->metric_audio_writes(),
+                (unsigned long long)g_sink->metric_bytes_requested(),
+                (unsigned long long)g_sink->metric_bytes_written(),
+                (long)g_sink->metric_frames_buffered(),
+                (unsigned long)g_sink->metric_stream_starts(),
+                (unsigned long)g_sink->metric_stream_clears(),
+                (unsigned long)g_sink->metric_reconfigures(),
+                (unsigned long)g_sink->metric_xsmt_toggles(),
+                (unsigned long)g_sink->metric_max_audio_gap_ms());
+    }
+    if (n < (int)sizeof(body) - 2) {
+        body[n++] = '}';
+        body[n++] = '\n';
+        body[n] = '\0';
+    }
     httpd_resp_set_type(req, "application/json");
     httpd_resp_sendstr(req, body);
     return ESP_OK;
@@ -191,8 +220,12 @@ esp_err_t handle_status(httpd_req_t* req) {
 
 }  // namespace
 
-esp_err_t ota_server_start(uint16_t port, const char* bearer_token) {
+void ota_server_set_sink(I2sAudioSink* sink) { g_sink = sink; }
+
+esp_err_t ota_server_start(uint16_t port, const char* bearer_token,
+                           I2sAudioSink* sink) {
     g_token = bearer_token ? bearer_token : "";
+    g_sink = sink;
     if (g_token.empty()) {
         ESP_LOGW(TAG, "OTA running with NO authentication (set OTA_TOKEN to require one)");
     }

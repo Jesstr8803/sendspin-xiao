@@ -28,6 +28,7 @@ I2sAudioSink::I2sAudioSink(gpio_num_t lrck, gpio_num_t bck, gpio_num_t dout, gpi
 void I2sAudioSink::set_xsmt(bool unmuted) {
     if (xsmt_gpio_ == GPIO_NUM_NC) return;
     gpio_set_level(xsmt_gpio_, unmuted ? 1 : 0);
+    xsmt_toggle_count_.fetch_add(1, std::memory_order_relaxed);
 }
 
 I2sAudioSink::~I2sAudioSink() {
@@ -160,6 +161,7 @@ esp_err_t I2sAudioSink::reconfigure(uint32_t sample_rate, uint8_t channels, uint
     frames_buffered_.store(0, std::memory_order_relaxed);
 
     ESP_LOGI(TAG, "I2S reconfigured: %u Hz, %u ch, %u-bit", sample_rate, channels, bit_depth);
+    reconfigure_count_.fetch_add(1, std::memory_order_relaxed);
     return ESP_OK;
 }
 
@@ -181,8 +183,22 @@ size_t I2sAudioSink::on_audio_write(uint8_t* data, size_t length, uint32_t timeo
     // that on_audio_write can fire without an explicit stream_start (e.g. on
     // mid-track resume after device reboot). Driving XSMT high here makes the
     // mute always track real audio flow.
+    int64_t now_us = esp_timer_get_time();
+    int64_t prev_us = last_audio_us_.exchange(now_us, std::memory_order_relaxed);
+    if (prev_us != 0) {
+        uint32_t gap_ms = static_cast<uint32_t>((now_us - prev_us) / 1000);
+        // Only treat sub-second gaps as "during playback" — bigger gaps mean
+        // the stream stopped + restarted, and aren't useful as jitter signal.
+        if (gap_ms < 1000) {
+            uint32_t cur_max = max_audio_gap_ms_.load(std::memory_order_relaxed);
+            while (gap_ms > cur_max &&
+                   !max_audio_gap_ms_.compare_exchange_weak(cur_max, gap_ms,
+                                                             std::memory_order_relaxed)) {}
+        }
+    }
     set_xsmt(true);
-    last_audio_us_.store(esp_timer_get_time(), std::memory_order_relaxed);
+    audio_write_count_.fetch_add(1, std::memory_order_relaxed);
+    bytes_requested_.fetch_add(length, std::memory_order_relaxed);
 
     const uint8_t* write_src = data;
     static uint8_t scratch[32768];
@@ -233,6 +249,7 @@ size_t I2sAudioSink::on_audio_write(uint8_t* data, size_t length, uint32_t timeo
         if (frame_bytes > 0 && bytes_written > 0) {
             frames_buffered_.fetch_add(bytes_written / frame_bytes, std::memory_order_relaxed);
         }
+        bytes_written_.fetch_add(bytes_written, std::memory_order_relaxed);
         return bytes_written;
     }
     ESP_LOGW(TAG, "i2s_channel_write error: %s", esp_err_to_name(err));
@@ -260,6 +277,7 @@ void I2sAudioSink::on_stream_start() {
     }
     reconfigure(*params.sample_rate, *params.channels, *params.bit_depth);
     set_xsmt(true);
+    stream_start_count_.fetch_add(1, std::memory_order_relaxed);
 }
 
 void I2sAudioSink::on_stream_end() {
@@ -271,6 +289,7 @@ void I2sAudioSink::on_stream_end() {
 void I2sAudioSink::on_stream_clear() {
     ESP_LOGI(TAG, "on_stream_clear (flushing DMA)");
     set_xsmt(false);
+    stream_clear_count_.fetch_add(1, std::memory_order_relaxed);
     if (tx_handle_ && channel_enabled_) {
         i2s_channel_disable(tx_handle_);
         i2s_channel_enable(tx_handle_);
