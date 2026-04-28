@@ -1,5 +1,13 @@
 ## [Unreleased]
 
+## [v0.2.8] - 2026-04-28
+
+### Changed
+- Tuned `audio_buffer_capacity` to 2 MB (was 1 MB in v0.2.7, 4 MB before).
+  v0.2.7's 1 MB reduced track-transition delays but also surfaced
+  audible Kalman sync-correction clicks that the larger buffer had
+  been masking. 2 MB splits the difference.
+
 ## [v0.2.7] - 2026-04-28
 
 ### Changed
