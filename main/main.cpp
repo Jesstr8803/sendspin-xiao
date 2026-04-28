@@ -128,7 +128,7 @@ extern "C" void app_main() {
         {SendspinCodecFormat::PCM, 2, 48000, 16},
         {SendspinCodecFormat::PCM, 2, 44100, 16},
     };
-    player_cfg.audio_buffer_capacity = 4000000;
+    player_cfg.audio_buffer_capacity = 1000000;
     player_cfg.psram_stack = false;
     player_cfg.priority = 10;
     auto& player = client.add_player(std::move(player_cfg));
