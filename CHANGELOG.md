@@ -1,5 +1,13 @@
 ## [Unreleased]
 
+## [v0.2.7] - 2026-04-28
+
+### Changed
+- Reduced `audio_buffer_capacity` from 4 MB to 1 MB (~5 seconds @ 48k/16/2).
+  Caps the worst-case accumulated transition delay between tracks; still
+  ample cushion for WiFi jitter. Experimental — revert if it causes more
+  underruns than the larger buffer prevented.
+
 ## [v0.2.6] - 2026-04-28
 
 ### Fixed
