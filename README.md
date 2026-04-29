@@ -237,6 +237,10 @@ In `main/main.cpp`, also worth editing:
 - **Doesn't show up in MA** — confirm same VLAN as the MA server, mDNS multicast isn't blocked. From Linux: `avahi-browse -r _sendspin._tcp`. From macOS: `dns-sd -B _sendspin._tcp`.
 - **Wrong-pitch audio or silence** — check DAC jumpers (especially `H3L → H` for unmute and `SCK → GND` for PLL enable). Watch the boot log for `I2S reconfigured: X Hz, Y ch, Z-bit` to confirm sample rate.
 - **Choppy / skipping audio** — check the RSSI in boot log. Anything above -65 dBm is fine; below that, move closer or add an external antenna via the U.FL connector.
+- **Buzzing / "data ticks" / WiFi-traffic-sounding noise on the speaker output** — usually a power-rail loop, not the DAC itself. If headphones plugged into the same DAC are clean but a powered speaker is noisy, the speaker's input stage is sharing a conductive path with the XIAO's noisy 3.3V rail (especially if you're powering the XIAO from a USB port on the speaker itself). Tested fixes that work, in order of effort:
+    1. Power the XIAO from a separate source (battery pack / wall wart on a different outlet) — confirms the loop is the issue.
+    2. **Inline audio ground-loop isolator** ($8-15, search "ground loop isolator 3.5mm") on the cable between DAC and speaker. 1:1 transformer, breaks the conductive path. Tested working — fits in a small enclosure, no PCB changes.
+    3. **External antenna via U.FL** if RSSI is borderline — weaker signal means the radio bursts harder during transmits, which makes rail noise worse. -55 dBm or better is comfortable.
 
 ## Known limitations
 
