@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+## [v0.2.13] - 2026-05-01
+
+### Changed
+- Back to 1000ms / 32 time-burst (matches v0.2.11). On further listening
+  the tighter sync did help; reverting v0.2.12's revert.
+
 ## [v0.2.12] - 2026-05-01
 
 ### Reverted
