@@ -116,7 +116,7 @@ extern "C" void app_main() {
     cfg.software_version = (idf_ver[0] == 'v') ? idf_ver + 1 : idf_ver;
     cfg.httpd_psram_stack = true;
     cfg.time_burst_interval_ms = 1000;
-    cfg.time_burst_size = 32;
+    cfg.time_burst_size = 64;
 
     SendspinClient client(std::move(cfg));
 
