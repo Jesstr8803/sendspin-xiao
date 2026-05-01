@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+## [v0.2.14] - 2026-05-01
+
+### Changed
+- `time_burst_size` 32 → 64 (interval stays at 1000 ms). Bigger
+  per-burst sample for the Kalman regression.
+
 ## [v0.2.13] - 2026-05-01
 
 ### Changed
