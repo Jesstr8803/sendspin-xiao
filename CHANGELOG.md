@@ -1,5 +1,12 @@
 ## [Unreleased]
 
+## [v0.2.12] - 2026-05-01
+
+### Reverted
+- `time_burst_interval_ms` 1000 → 2000 and `time_burst_size` 32 → 16
+  (back to v0.2.10 values). v0.2.11's tighter bursts didn't produce
+  audible improvement worth the doubled sync chatter.
+
 ## [v0.2.11] - 2026-04-28
 
 ### Changed
