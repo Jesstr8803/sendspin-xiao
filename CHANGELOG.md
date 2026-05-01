@@ -1,5 +1,14 @@
 ## [Unreleased]
 
+## [v0.2.11] - 2026-04-28
+
+### Changed
+- `time_burst_interval_ms` 2000 → 1000 and `time_burst_size` 16 → 32.
+  Kalman time-sync filter now gets twice as many bursts per second
+  with each burst twice as long. Tightens timing precision for
+  multi-room alignment with minimal network overhead (sync packets
+  are tiny).
+
 ## [v0.2.10] - 2026-04-28
 
 ### Fixed
